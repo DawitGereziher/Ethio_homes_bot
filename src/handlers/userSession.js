@@ -1,7 +1,7 @@
 const storage = require('../storage');
 const config = require('../config');
 const { formatPost } = require('../utils/formatters');
-const crypto = require('crypto'); // Built-in for unique ID
+const crypto = require('crypto');
 
 const STEPS_ORDER = [
   'LISTING_TYPE', 'CATEGORY', 'TITLE', 'CITY', 'SUB_CITY', 
@@ -14,10 +14,14 @@ const STEPS = STEPS_ORDER.reduce((acc, step) => {
   return acc;
 }, {});
 
+// Common translated buttons
+const BTN_CANCEL = '❌ Cancel / አቋርጥ';
+const BTN_BACK = '🔙 Back / ተመለስ';
+
 // Keyboards
 const listingTypeKeyboard = {
   reply_markup: {
-    keyboard: [[{ text: 'For Sale' }, { text: 'For Rent' }], [{ text: '❌ Cancel' }]],
+    keyboard: [[{ text: 'For Sale / ለሽያጭ' }, { text: 'For Rent / ለኪራይ' }], [{ text: BTN_CANCEL }]],
     resize_keyboard: true,
     one_time_keyboard: true
   }
@@ -26,10 +30,10 @@ const listingTypeKeyboard = {
 const categoryKeyboard = {
   reply_markup: {
     keyboard: [
-      [{ text: 'Condominium' }, { text: 'Villa' }],
-      [{ text: 'Apartment' }, { text: 'Guest house' }],
-      [{ text: 'Office' }, { text: 'Commercial' }],
-      [{ text: '🔙 Back' }, { text: '❌ Cancel' }]
+      [{ text: 'Condominium / ኮንዶሚኒየም' }, { text: 'Villa / ቪላ' }],
+      [{ text: 'Apartment / አፓርትመንት' }, { text: 'Guest house / ጌስት ሃውስ' }],
+      [{ text: 'Office / ቢሮ' }, { text: 'Commercial / ንግድ ቤት' }],
+      [{ text: BTN_BACK }, { text: BTN_CANCEL }]
     ],
     resize_keyboard: true,
     one_time_keyboard: true
@@ -39,11 +43,12 @@ const categoryKeyboard = {
 const subCityKeyboard = {
   reply_markup: {
     keyboard: [
-      [{ text: 'Bole' }, { text: 'Yeka' }, { text: 'Nifas Silk-Lafto' }],
-      [{ text: 'Kirkos' }, { text: 'Lideta' }, { text: 'Arada' }],
-      [{ text: 'Addis Ketema' }, { text: 'Akaky Kaliti' }, { text: 'Kolfe Keranio' }],
-      [{ text: 'Gulele' }, { text: 'Lemi Kura' }],
-      [{ text: '🔙 Back' }, { text: '❌ Cancel' }]
+      [{ text: 'Bole / ቦሌ' }, { text: 'Yeka / የካ' }],
+      [{ text: 'Nifas Silk-Lafto / ንፋስ ስልክ' }, { text: 'Kirkos / ቂርቆስ' }],
+      [{ text: 'Lideta / ልደታ' }, { text: 'Arada / አራዳ' }],
+      [{ text: 'Addis Ketema / አዲስ ከተማ' }, { text: 'Akaky / አቃቂ' }],
+      [{ text: 'Kolfe / ኮልፌ' }, { text: 'Gulele / ጉለሌ' }, { text: 'Lemi Kura / ለሚ ኩራ' }],
+      [{ text: BTN_BACK }, { text: BTN_CANCEL }]
     ],
     resize_keyboard: true,
     one_time_keyboard: true
@@ -53,9 +58,9 @@ const subCityKeyboard = {
 const numericKeyboard = {
   reply_markup: {
     keyboard: [
-      [{ text: '0 (Studio)' }, { text: '1' }, { text: '2' }],
+      [{ text: '0 (Studio / ስቱዲዮ)' }, { text: '1' }, { text: '2' }],
       [{ text: '3' }, { text: '4' }, { text: '5+' }],
-      [{ text: '🔙 Back' }, { text: '❌ Cancel' }]
+      [{ text: BTN_BACK }, { text: BTN_CANCEL }]
     ],
     resize_keyboard: true,
     one_time_keyboard: true
@@ -64,7 +69,7 @@ const numericKeyboard = {
 
 const defaultBackCancelKeyboard = {
   reply_markup: {
-    keyboard: [[{ text: '🔙 Back' }, { text: '❌ Cancel' }]],
+    keyboard: [[{ text: BTN_BACK }, { text: BTN_CANCEL }]],
     resize_keyboard: true,
     one_time_keyboard: true
   }
@@ -72,7 +77,7 @@ const defaultBackCancelKeyboard = {
 
 const skipKeyboard = {
   reply_markup: {
-    keyboard: [[{ text: 'Skip / NA' }], [{ text: '🔙 Back' }, { text: '❌ Cancel' }]],
+    keyboard: [[{ text: 'Skip / እለፍ (N/A)' }], [{ text: BTN_BACK }, { text: BTN_CANCEL }]],
     resize_keyboard: true,
     one_time_keyboard: true
   }
@@ -80,7 +85,7 @@ const skipKeyboard = {
 
 const imageKeyboard = {
   reply_markup: {
-    keyboard: [[{ text: 'Done' }, { text: 'Skip Image' }], [{ text: '🔙 Back' }, { text: '❌ Cancel' }]],
+    keyboard: [[{ text: 'Done / ተጠናቋል' }, { text: 'Skip Image / ምስል እለፍ' }], [{ text: BTN_BACK }, { text: BTN_CANCEL }]],
     resize_keyboard: true,
     one_time_keyboard: true
   }
@@ -88,7 +93,7 @@ const imageKeyboard = {
 
 const confirmationKeyboard = {
   reply_markup: {
-    keyboard: [[{ text: 'Submit to Admin ✅' }], [{ text: 'Edit ✏️' }, { text: '❌ Cancel' }]],
+    keyboard: [[{ text: 'Submit to Admin ✅ / ለአድሚን ላክ' }], [{ text: 'Edit ✏️ / አስተካክል' }, { text: BTN_CANCEL }]],
     resize_keyboard: true,
     one_time_keyboard: true
   }
@@ -103,50 +108,50 @@ function getProgress(stepName) {
 
 function sendPromptForStep(bot, chatId, step, errorMessage = null) {
   const prefix = errorMessage ? `⚠️ ${errorMessage}\n\n` : '';
-  const progress = getProgress(step);
+  const progressText = getProgress(step) ? `_${getProgress(step)}_\n\n` : '';
   
   switch(step) {
     case STEPS.LISTING_TYPE:
-      bot.sendMessage(chatId, `${prefix}${progress} Are you listing this property **For Sale** or **For Rent**?`, { ...listingTypeKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Are you listing this property For Sale or For Rent?**\n**ይህን ንብረት ለሽያጭ ነው ወይስ ለኪራይ ያቀረቡት?**`, { ...listingTypeKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.CATEGORY:
-      bot.sendMessage(chatId, `${prefix}${progress} What is the **Category** of the property?`, { ...categoryKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**What is the Category of the property?**\n**የንብረቱ አይነት ምንድን ነው?**`, { ...categoryKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.TITLE:
-      bot.sendMessage(chatId, `${prefix}${progress} Please send me the **Title** of your property (e.g., '2BHK Apartment in Downtown').`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Please send me the Title of your property (e.g., '2BHK Apartment in Downtown').**\n**እባክዎ የንብረትዎን ርዕስ ይላኩልን (ለምሳሌ 'ባለ 2 መኝታ አፓርትመንት መሀል ከተማ')።**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.CITY:
-      bot.sendMessage(chatId, `${prefix}${progress} Please send the **City**.`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Please send the City.**\n**እባክዎ ከተማውን ይላኩ።**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.SUB_CITY:
-      bot.sendMessage(chatId, `${prefix}${progress} What is the **Sub city**?`, { ...subCityKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**What is the Sub city?**\n**ክፍለ ከተማው የት ነው?**`, { ...subCityKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.WOREDA:
-      bot.sendMessage(chatId, `${prefix}${progress} What is the **Woreda**? (e.g., 01)`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**What is the Woreda? (e.g., 01)**\n**ወረዳው ስንት ነው? (ለምሳሌ 01)**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.ADDRESS:
-      bot.sendMessage(chatId, `${prefix}${progress} Please specify the **Address** (e.g., Near Lachi Meneharya).`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Please specify the Address (e.g., Near Lachi Meneharya).**\n**እባክዎ አድራሻውን ይግለጹ (ለምሳሌ ላቺ መናኸሪያ አጠገብ)።**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.PRICE:
-      bot.sendMessage(chatId, `${prefix}${progress} What is the **Price**? (e.g., '$1500/month', '250,000 ETB')`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**What is the Price? (e.g., '$1500/month', '250,000 ETB')**\n**ዋጋው ስንት ነው? (ለምሳሌ 15,000 ብር በወር፤ 5,000,000 ብር)**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.BEDROOM:
-      bot.sendMessage(chatId, `${prefix}${progress} How many **Bedrooms**?`, { ...numericKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**How many Bedrooms?**\n**ስንት መኝታ ቤቶች አሉት?**`, { ...numericKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.BATHROOM:
-      bot.sendMessage(chatId, `${prefix}${progress} How many **Bathrooms**?`, { ...numericKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**How many Bathrooms?**\n**ስንት መታጠቢያ ቤቶች አሉት?**`, { ...numericKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.AREA:
-      bot.sendMessage(chatId, `${prefix}${progress} What is the **Area(m²)**?`, { ...skipKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**What is the Area(m²)?**\n**ስፋቱ (ካሬ ሜትር) ስንት ነው?**`, { ...skipKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.DESCRIPTION:
-      bot.sendMessage(chatId, `${prefix}${progress} Please provide a **Description** with all the necessary details.`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Please provide a Description with all the necessary details.**\n**እባክዎ አስፈላጊ የሆኑ ዝርዝሮችን የያዘ ማብራሪያ ይስጡን።**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.PHONE:
-      bot.sendMessage(chatId, `${prefix}${progress} Please provide your **Phone number** for contact.`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Please provide your Phone number for contact.**\n**እባክዎ ለመገናኛ የሚሆን ስልክ ቁጥር ይላኩልን።**`, { ...defaultBackCancelKeyboard, parse_mode: 'Markdown' });
       break;
     case STEPS.IMAGE:
-      bot.sendMessage(chatId, `${prefix}${progress} Almost done! Please send **Image(s)** of the property.\n\nWhen finished, press **Done**.`, { ...imageKeyboard, parse_mode: 'Markdown' });
+      bot.sendMessage(chatId, `${prefix}${progressText}**Almost done! Please send Image(s) of the property.**\n**When finished, press Done.**\n\n**ጨርሰናል! እባክዎ የንብረቱን ምስል(ሎች) ይላኩ።**\n**ሲጨርሱ "ተጠናቋል (Done)" የሚለውን ይጫኑ።**`, { ...imageKeyboard, parse_mode: 'Markdown' });
       break;
   }
 }
@@ -164,7 +169,7 @@ function handleBack(bot, chatId, session) {
 
 function handleCancel(bot, chatId, session) {
   storage.clearSession(chatId);
-  bot.sendMessage(chatId, "Submission cancelled ❌. Send /start whenever you are ready to try again.", {
+  bot.sendMessage(chatId, "Submission cancelled ❌. Send /start whenever you are ready to try again.\nምዝገባው ተቋርጧል ❌። እንደገና ለመጀመር ዝግጁ ሲሆኑ /start ብለው ይላኩ።", {
     reply_markup: { remove_keyboard: true }
   });
 }
@@ -173,7 +178,7 @@ function setupUserSessionHandlers(bot) {
   bot.onText(/^\/start$/, (msg) => {
     const chatId = msg.chat.id;
     storage.saveSession(chatId, { step: STEPS.LISTING_TYPE, data: {} });
-    bot.sendMessage(chatId, "Welcome to the Property Listing Bot! 🏡\nLet's get your property listed.", { reply_markup: { remove_keyboard: true } });
+    bot.sendMessage(chatId, "Welcome to the Property Listing Bot! 🏡\nLet's get your property listed.\n\nወደ ንብረት ማከራያ እና መሸጫ ቦት በደህና መጡ! 🏡\nንብረትዎን እናስመዝግብ።", { reply_markup: { remove_keyboard: true } });
     sendPromptForStep(bot, chatId, STEPS.LISTING_TYPE);
   });
 
@@ -183,7 +188,7 @@ function setupUserSessionHandlers(bot) {
     if (session) {
       handleCancel(bot, chatId, session);
     } else {
-      bot.sendMessage(chatId, "You don't have any active submission to cancel.", { reply_markup: { remove_keyboard: true } });
+      bot.sendMessage(chatId, "You don't have any active submission to cancel.\nለማቋረጥ ምንም ንቁ ምዝገባ የለዎትም።", { reply_markup: { remove_keyboard: true } });
     }
   });
 
@@ -197,18 +202,18 @@ function setupUserSessionHandlers(bot) {
     const session = storage.getSession(chatId);
     if (!session) return;
 
-    if (text === '❌ Cancel') {
+    if (text === BTN_CANCEL) {
       return handleCancel(bot, chatId, session);
     }
     
-    if (text === '🔙 Back') {
+    if (text === BTN_BACK) {
       return handleBack(bot, chatId, session);
     }
 
     switch (session.step) {
       case STEPS.LISTING_TYPE:
-        if (!text || (text !== 'For Sale' && text !== 'For Rent')) {
-          return sendPromptForStep(bot, chatId, session.step, "Please choose a valid option from the keyboard.");
+        if (!text || (text !== 'For Sale / ለሽያጭ' && text !== 'For Rent / ለኪራይ')) {
+          return sendPromptForStep(bot, chatId, session.step, "Please choose a valid option from the keyboard.\nእባክዎ ከኪቦርዱ ላይ የተሰጡትን አማራጮች ይጠቀሙ።");
         }
         session.data.listingType = text;
         session.step = STEPS.CATEGORY;
@@ -217,7 +222,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.CATEGORY:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid input.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid input. / የተሳሳተ መረጃ።");
         session.data.category = text;
         session.step = STEPS.TITLE;
         storage.saveSession(chatId, session);
@@ -225,7 +230,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.TITLE:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.title = text;
         session.step = STEPS.CITY;
         storage.saveSession(chatId, session);
@@ -233,7 +238,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.CITY:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.city = text;
         session.step = STEPS.SUB_CITY;
         storage.saveSession(chatId, session);
@@ -241,7 +246,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.SUB_CITY:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.subCity = text;
         session.step = STEPS.WOREDA;
         storage.saveSession(chatId, session);
@@ -249,7 +254,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.WOREDA:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.woreda = text;
         session.step = STEPS.ADDRESS;
         storage.saveSession(chatId, session);
@@ -257,7 +262,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.ADDRESS:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.address = text;
         session.step = STEPS.PRICE;
         storage.saveSession(chatId, session);
@@ -265,7 +270,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.PRICE:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.price = text;
         session.step = STEPS.BEDROOM;
         storage.saveSession(chatId, session);
@@ -273,7 +278,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.BEDROOM:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.bedroom = text;
         session.step = STEPS.BATHROOM;
         storage.saveSession(chatId, session);
@@ -281,7 +286,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.BATHROOM:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.bathroom = text;
         session.step = STEPS.AREA;
         storage.saveSession(chatId, session);
@@ -289,15 +294,15 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.AREA:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
-        session.data.area = text === 'Skip / NA' ? 'N/A' : text;
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
+        session.data.area = text === 'Skip / እለፍ (N/A)' ? 'N/A' : text;
         session.step = STEPS.DESCRIPTION;
         storage.saveSession(chatId, session);
         sendPromptForStep(bot, chatId, session.step);
         break;
 
       case STEPS.DESCRIPTION:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.description = text;
         session.step = STEPS.PHONE;
         storage.saveSession(chatId, session);
@@ -305,7 +310,7 @@ function setupUserSessionHandlers(bot) {
         break;
 
       case STEPS.PHONE:
-        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text.");
+        if (!text) return sendPromptForStep(bot, chatId, session.step, "Invalid text. / የተሳሳተ ጽሁፍ።");
         session.data.phone = text;
         session.data.photoIds = []; // reset images if revisiting step
         session.step = STEPS.IMAGE;
@@ -316,16 +321,16 @@ function setupUserSessionHandlers(bot) {
       case STEPS.IMAGE:
         if (text) {
           const lower = text.toLowerCase().trim();
-          if (lower === 'skip image' || lower === 'done') {
-            if (lower === 'skip image') session.data.photoIds = [];
+          if (lower === 'skip image / ምስል እለፍ' || lower === 'done / ተጠናቋል') {
+            if (lower === 'skip image / ምስል እለፍ') session.data.photoIds = [];
             
             // Move to confirmation step instead of finishing immediately
             session.step = STEPS.CONFIRMATION;
             storage.saveSession(chatId, session);
             
-            const previewText = `*PREVIEW OF YOUR LISTING:*\n\n${formatPost(session.data)}`;
+            const previewText = `*PREVIEW OF YOUR LISTING / የንብረትዎን ዝርዝር ይገምግሙ:*\n\n${formatPost(session.data)}`;
             bot.sendMessage(chatId, previewText, { parse_mode: 'Markdown' });
-            bot.sendMessage(chatId, "Would you like to submit this to the admins, or edit it?", {
+            bot.sendMessage(chatId, "Would you like to submit this to the admins, or edit it?\nይህን ለአድሚኖች መላክ ይፈልጋሉ ወይስ ማስተካከል?", {
               ...confirmationKeyboard,
               parse_mode: 'Markdown'
             });
@@ -343,29 +348,29 @@ function setupUserSessionHandlers(bot) {
             if (session.lastMediaGroupId !== msg.media_group_id) {
               session.lastMediaGroupId = msg.media_group_id;
               storage.saveSession(chatId, session);
-              bot.sendMessage(chatId, "Photos received! You can send more, or press **Done**.", { parse_mode: 'Markdown', ...imageKeyboard });
+              bot.sendMessage(chatId, "Photos received! You can send more, or press **Done**.\nፎቶዎች ደርሰዋል! ተጨማሪ መላክ ይችላሉ፣ ወይም **ተጠናቋል (Done)** ን ይጫኑ።", { parse_mode: 'Markdown', ...imageKeyboard });
             }
           } else {
-            bot.sendMessage(chatId, "Photo received! You can send more, or press **Done**.", { parse_mode: 'Markdown', ...imageKeyboard });
+            bot.sendMessage(chatId, "Photo received! You can send more, or press **Done**.\nፎቶው ደርሷል! ተጨማሪ መላክ ይችላሉ፣ ወይም **ተጠናቋል (Done)** ን ይጫኑ።", { parse_mode: 'Markdown', ...imageKeyboard });
           }
           return;
         }
 
-        sendPromptForStep(bot, chatId, session.step, "Please send an image (photo), or press 'Done' or 'Skip Image'.");
+        sendPromptForStep(bot, chatId, session.step, "Please send an image (photo), or press 'Done'.\nእባክዎ ምስል ይላኩ፣ ወይም 'ተጠናቋል (Done)' የሚለውን ይጫኑ።");
         break;
 
       case STEPS.CONFIRMATION:
-        if (text === 'Submit to Admin ✅') {
+        if (text === 'Submit to Admin ✅ / ለአድሚን ላክ') {
           // Finish and submit!
-          bot.sendMessage(chatId, "Submitting...", { reply_markup: { remove_keyboard: true } });
+          bot.sendMessage(chatId, "Submitting... / በመላክ ላይ...", { reply_markup: { remove_keyboard: true } });
           return finishSubmission(bot, chatId, session.data);
-        } else if (text === 'Edit ✏️') {
+        } else if (text === 'Edit ✏️ / አስተካክል') {
           session.step = STEPS.LISTING_TYPE;
           storage.saveSession(chatId, session);
-          bot.sendMessage(chatId, "Restarting submission. Let's make some edits.");
+          bot.sendMessage(chatId, "Restarting submission. Let's make some edits.\nእንደገና ጀምረናል፣ እባክዎ በትክክል ያስተካክሉ።");
           sendPromptForStep(bot, chatId, STEPS.LISTING_TYPE);
         } else {
-          bot.sendMessage(chatId, "Please choose to either Submit or Edit from the keyboard.", confirmationKeyboard);
+          bot.sendMessage(chatId, "Please choose to either Submit or Edit from the keyboard.\nእባክዎ ኪቦርዱ ላይ ካሉት አማራጮች ይምረጡ።", confirmationKeyboard);
         }
         break;
     }
@@ -386,7 +391,7 @@ function finishSubmission(bot, userId, data) {
   });
 
   // Notify user
-  bot.sendMessage(userId, "Thank you! Your property listing has been submitted and is pending admin approval. You will be notified once it is approved or rejected.");
+  bot.sendMessage(userId, "Thank you! Your property listing has been submitted and is pending admin approval. You will be notified once it is approved or rejected.\nእናመሰግናለን! የንብረቶ ምዝገባ ተልኳል እናም የአድሚን ማረጋገጫ በመጠባበቅ ላይ ነው። ሲፀድቅ ወይም ሲወድቅ እናሳውቆታለን።");
 
   // Prepare and send message to admin
   const formattedPost = formatPost(data);

@@ -6,22 +6,22 @@
  */
 function formatPost(data) {
   return `🏠 **${data.title}**
-🏷 Type: ${data.listingType}
-🏢 Category: ${data.category}
+**🏷 Type / አይነት:** ${data.listingType}
+**🏢 Category / ምድብ:** ${data.category}
   
-📍 City: ${data.city}
-📍 Sub city: ${data.subCity}
-📍 Woreda: ${data.woreda}
-📍 Address: ${data.address}
+**📍 City / ከተማ:** ${data.city}
+**📍 Sub city / ክፍለ ከተማ:** ${data.subCity}
+**📍 Woreda / ወረዳ:** ${data.woreda}
+**📍 Address / አድራሻ:** ${data.address}
 
-💰 Price: ${data.price}
-🛏 Bedroom: ${data.bedroom}
-🛁 Bathroom: ${data.bathroom}
-📐 Area: ${data.area} m²
+**💰 Price / ዋጋ:** ${data.price}
+**🛏 Bedroom / መኝታ ቤት:** ${data.bedroom}
+**🛁 Bathroom / መታጠቢያ ቤት:** ${data.bathroom}
+**📐 Area / ስፋት:** ${data.area} m²
 
 ${data.description}
 
-📞 Contact: ${data.phone}`;
+**📞 Contact / ስልክ:** ${data.phone}`;
 }
 
 module.exports = {
