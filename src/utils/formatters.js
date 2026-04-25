@@ -5,9 +5,19 @@
  * @returns {String} The formatted text
  */
 function formatPost(data) {
-  return `🏠 House for Rent/Sale
-📍 Location: ${data.location}
+  return `🏠 **${data.title}**
+🏷 Type: ${data.listingType}
+🏢 Category: ${data.category}
+  
+📍 City: ${data.city}
+📍 Sub city: ${data.subCity}
+📍 Woreda: ${data.woreda}
+📍 Address: ${data.address}
+
 💰 Price: ${data.price}
+🛏 Bedroom: ${data.bedroom}
+🛁 Bathroom: ${data.bathroom}
+📐 Area: ${data.area} m²
 
 ${data.description}
 

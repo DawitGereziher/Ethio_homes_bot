@@ -5,12 +5,40 @@ const crypto = require('crypto'); // Built-in for unique ID
 
 // Define steps in the collection process
 const STEPS = {
+  LISTING_TYPE: 'LISTING_TYPE',
+  CATEGORY: 'CATEGORY',
   TITLE: 'TITLE',
-  LOCATION: 'LOCATION',
+  CITY: 'CITY',
+  SUB_CITY: 'SUB_CITY',
+  WOREDA: 'WOREDA',
+  ADDRESS: 'ADDRESS',
   PRICE: 'PRICE',
+  BEDROOM: 'BEDROOM',
+  BATHROOM: 'BATHROOM',
+  AREA: 'AREA',
   DESCRIPTION: 'DESCRIPTION',
   PHONE: 'PHONE',
   IMAGE: 'IMAGE'
+};
+
+const listingTypeKeyboard = {
+  reply_markup: {
+    keyboard: [[{ text: 'For Sale' }, { text: 'For Rent' }]],
+    resize_keyboard: true,
+    one_time_keyboard: true
+  }
+};
+
+const categoryKeyboard = {
+  reply_markup: {
+    keyboard: [
+      [{ text: 'Condominium' }, { text: 'Villa' }],
+      [{ text: 'Apartment' }, { text: 'Guest house' }],
+      [{ text: 'Office' }, { text: 'Commercial' }]
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: true
+  }
 };
 
 function setupUserSessionHandlers(bot) {
@@ -19,9 +47,12 @@ function setupUserSessionHandlers(bot) {
     const chatId = msg.chat.id;
     
     // Reset or create session for the user
-    storage.saveSession(chatId, { step: STEPS.TITLE, data: {} });
+    storage.saveSession(chatId, { step: STEPS.LISTING_TYPE, data: {} });
     
-    bot.sendMessage(chatId, "Welcome to the Property Listing Bot! 🏡\n\nLet's get your property listed. First, please send me the **Title** of your property (e.g., '2BHK Apartment in Downtown').", { parse_mode: 'Markdown' });
+    bot.sendMessage(chatId, "Welcome to the Property Listing Bot! 🏡\n\nAre you listing this property **For Sale** or **For Rent**?", {
+      ...listingTypeKeyboard,
+      parse_mode: 'Markdown' 
+    });
   });
 
   // Handle /cancel command to abort process
@@ -52,25 +83,96 @@ function setupUserSessionHandlers(bot) {
     }
 
     switch (session.step) {
+      case STEPS.LISTING_TYPE:
+        if (!text || (text !== 'For Sale' && text !== 'For Rent')) {
+          return bot.sendMessage(chatId, "Please choose 'For Sale' or 'For Rent' from the keyboard.", listingTypeKeyboard);
+        }
+        session.data.listingType = text;
+        session.step = STEPS.CATEGORY;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "Great! Now, what is the **Category** of the property?", {
+          ...categoryKeyboard,
+          parse_mode: 'Markdown'
+        });
+        break;
+
+      case STEPS.CATEGORY:
+        session.data.category = text;
+        session.step = STEPS.TITLE;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "Got it. Please send me the **Title** of your property (e.g., '2BHK Apartment in Downtown').", {
+          reply_markup: { remove_keyboard: true },
+          parse_mode: 'Markdown'
+        });
+        break;
+
       case STEPS.TITLE:
         if (!text) return bot.sendMessage(chatId, "Please send a valid text Title.");
         session.data.title = text;
-        session.step = STEPS.LOCATION;
+        session.step = STEPS.CITY;
         storage.saveSession(chatId, session);
-        bot.sendMessage(chatId, "Great! Now, please send the **Location** of the property.", { parse_mode: 'Markdown' });
+        bot.sendMessage(chatId, "Great! Now, please send the **City**.", { parse_mode: 'Markdown' });
         break;
 
-      case STEPS.LOCATION:
-        if (!text) return bot.sendMessage(chatId, "Please send a valid text Location.");
-        session.data.location = text;
+      case STEPS.CITY:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text City.");
+        session.data.city = text;
+        session.step = STEPS.SUB_CITY;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "What is the **Sub city**?", { parse_mode: 'Markdown' });
+        break;
+
+      case STEPS.SUB_CITY:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text Sub city.");
+        session.data.subCity = text;
+        session.step = STEPS.WOREDA;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "Got it. What is the **Woreda**? (e.g., 01)", { parse_mode: 'Markdown' });
+        break;
+
+      case STEPS.WOREDA:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text Woreda.");
+        session.data.woreda = text;
+        session.step = STEPS.ADDRESS;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "Thanks. Please specify the **Address** (e.g., Near Lachi Meneharya).", { parse_mode: 'Markdown' });
+        break;
+
+      case STEPS.ADDRESS:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text Address.");
+        session.data.address = text;
         session.step = STEPS.PRICE;
         storage.saveSession(chatId, session);
-        bot.sendMessage(chatId, "Got it. What is the **Price**? (e.g., '$1500/month', '$250,000')", { parse_mode: 'Markdown' });
+        bot.sendMessage(chatId, "Got it. What is the **Price**? (e.g., '$1500/month', '250,000 ETB')", { parse_mode: 'Markdown' });
         break;
 
       case STEPS.PRICE:
         if (!text) return bot.sendMessage(chatId, "Please send a valid text Price.");
         session.data.price = text;
+        session.step = STEPS.BEDROOM;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "How many **Bedrooms**? (Send 0 if not applicable)", { parse_mode: 'Markdown' });
+        break;
+
+      case STEPS.BEDROOM:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text value for Bedrooms.");
+        session.data.bedroom = text;
+        session.step = STEPS.BATHROOM;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "How many **Bathrooms**? (Send 0 if not applicable)", { parse_mode: 'Markdown' });
+        break;
+
+      case STEPS.BATHROOM:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text value for Bathrooms.");
+        session.data.bathroom = text;
+        session.step = STEPS.AREA;
+        storage.saveSession(chatId, session);
+        bot.sendMessage(chatId, "What is the **Area(m²)**?", { parse_mode: 'Markdown' });
+        break;
+
+      case STEPS.AREA:
+        if (!text) return bot.sendMessage(chatId, "Please send a valid text Area.");
+        session.data.area = text;
         session.step = STEPS.DESCRIPTION;
         storage.saveSession(chatId, session);
         bot.sendMessage(chatId, "Nice. Please provide a **Description** with all the necessary details.", { parse_mode: 'Markdown' });
